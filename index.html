@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LeadPredictor</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #141820;
+      --surface:  #1c2230;
+      --card:     #222b3a;
+      --border:   #2d3a50;
+      --accent:   #4a7cdc;
+      --accent2:  #5e9cf0;
+      --text:     #e2e8f4;
+      --muted:    #7a8aaa;
+      --green:    #48bb78;
+      --bar1:     #4a7cdc;
+      --bar2:     #2d4a7a;
+      --bar3:     #1a2d50;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 960px;
+      background: var(--surface);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+    }
+
+    /* ── Header ── */
+    .header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-icon {
+      width: 28px; height: 28px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+    .logo-text { font-size: 18px; font-weight: 700; }
+    .logo-text span { color: var(--accent2); }
+
+    /* ── Main layout ── */
+    .main {
+      display: grid;
+      grid-template-columns: 220px 1fr 200px;
+      gap: 0;
+    }
+
+    /* ── Left Panel ── */
+    .panel-left {
+      padding: 20px 16px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 5px;
+    }
+    .field select,
+    .field input[type="date"],
+    .field input[type="number"] {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      padding: 7px 10px;
+      outline: none;
+      transition: border-color .2s;
+      appearance: auto;
+    }
+    .field select:focus,
+    .field input:focus { border-color: var(--accent); }
+
+    .currency-wrap {
+      position: relative;
+    }
+    .currency-wrap select { padding-left: 10px; }
+
+    .money-input {
+      position: relative;
+    }
+    .money-input span {
+      position: absolute;
+      left: 10px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 13px;
+      pointer-events: none;
+    }
+    .money-input input { padding-left: 22px !important; }
+
+    /* ── Center ── */
+    .panel-center {
+      padding: 20px 20px 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Chart */
+    .chart-area {
+      flex: 1;
+      position: relative;
+      min-height: 240px;
+    }
+
+    canvas#chart {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* Sliders section */
+    .sliders {
+      padding: 16px 0 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .slider-row label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .slider-wrap {
+      position: relative;
+    }
+    .slider-wrap input[type="range"] {
+      width: 100%;
+      height: 4px;
+      appearance: none;
+      background: var(--border);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    .slider-wrap input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--accent2);
+      border: 2px solid var(--bg);
+      box-shadow: 0 0 6px rgba(94,156,240,.5);
+      cursor: grab;
+    }
+    .slider-val {
+      position: absolute;
+      right: 0; top: -22px;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    /* ── Right Panel ── */
+    .panel-right {
+      padding: 20px 16px;
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .stat-card {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+    }
+    .stat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .stat-pct {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .stat-value {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      margin-bottom: 8px;
+    }
+    .stat-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .stat-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--accent);
+      transition: width .4s ease;
+    }
+    .stat-card:nth-child(1) .stat-bar-fill { background: #e2e8f4; }
+    .stat-card:nth-child(2) .stat-bar-fill { background: var(--accent); }
+    .stat-card:nth-child(3) .stat-bar-fill { background: var(--muted); }
+
+    /* Tooltip */
+    .tooltip {
+      position: absolute;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      line-height: 1.7;
+      pointer-events: none;
+      display: none;
+      z-index: 10;
+      box-shadow: 0 8px 24px rgba(0,0,0,.4);
+    }
+
+    @media (max-width: 700px) {
+      .main { grid-template-columns: 1fr; }
+      .panel-left, .panel-right { border: none; border-bottom: 1px solid var(--border); }
+      .panel-right { flex-direction: row; flex-wrap: wrap; }
+      .stat-card { flex: 1 1 140px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-icon">▶</div>
+    <div class="logo-text"><span>Lead</span>Predictor</div>
+  </div>
+
+  <div class="main">
+    <!-- LEFT: controls -->
+    <div class="panel-left">
+      <div class="field">
+        <label>Language</label>
+        <select id="lang">
+          <option>🇺🇸 English</option>
+          <option>🇧🇬 Bulgarian</option>
+          <option>🇩🇪 German</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Currency</label>
+        <select id="currency">
+          <option value="$">$ US Dollar</option>
+          <option value="€">€ Euro</option>
+          <option value="£">£ British Pound</option>
+          <option value="лв">лв Bulgarian Lev</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Campaign Start</label>
+        <input type="date" id="startDate" value="2026-05-08" />
+      </div>
+
+      <div class="field">
+        <label>Campaign End</label>
+        <input type="date" id="endDate" value="2026-11-04" />
+      </div>
+
+      <div class="field">
+        <label>Total Revenue</label>
+        <div class="money-input">
+          <span id="currSymbol">$</span>
+          <input type="number" id="revenue" value="10000" min="0" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Avg. Order Value</label>
+        <div class="money-input">
+          <span id="currSymbol2">$</span>
+          <input type="number" id="avgOrder" value="1000" min="1" />
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER: chart + sliders -->
+    <div class="panel-center">
+      <div class="chart-area">
+        <canvas id="chart"></canvas>
+        <div class="tooltip" id="tooltip"></div>
+      </div>
+
+      <div class="sliders">
+        <div class="slider-row">
+          <label>Lead Response Rate</label>
+          <div class="slider-wrap">
+            <span class="slider-val" id="leadRateVal">40.00%</span>
+            <input type="range" id="leadRate" min="1" max="100" value="40" step="0.5" />
+          </div>
+        </div>
+        <div class="slider-row">
+          <label>Prospect Response Rate</label>
+          <div class="slider-wrap">
+            <span class="slider-val" id="prospectRateVal">20.00%</span>
+            <input type="range" id="prospectRate" min="1" max="100" value="20" step="0.5" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: stats -->
+    <div class="panel-right">
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">📁 Prospects</span>
+          <span class="stat-pct" id="prospectPct">100%</span>
+        </div>
+        <div class="stat-value" id="prospectVal">125</div>
+        <div class="stat-bar"><div class="stat-bar-fill" id="prospectBar" style="width:100%"></div></div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">👤 Leads</span>
+          <span class="stat-pct" id="leadPct">20%</span>
+        </div>
+        <div class="stat-value" id="leadVal">25</div>
+        <div class="stat-bar"><div class="stat-bar-fill" id="leadBar" style="width:20%"></div></div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">🏆 Customers</span>
+          <span class="stat-pct" id="customerPct">8%</span>
+        </div>
+        <div class="stat-value" id="customerVal">10</div>
+        <div class="stat-bar"><div class="stat-bar-fill" id="customerBar" style="width:8%"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── DOM refs ──
+  const revenue      = document.getElementById('revenue');
+  const avgOrder     = document.getElementById('avgOrder');
+  const startDate    = document.getElementById('startDate');
+  const endDate      = document.getElementById('endDate');
+  const leadRate     = document.getElementById('leadRate');
+  const prospectRate = document.getElementById('prospectRate');
+  const leadRateVal     = document.getElementById('leadRateVal');
+  const prospectRateVal = document.getElementById('prospectRateVal');
+  const currency = document.getElementById('currency');
+  const currSymbol  = document.getElementById('currSymbol');
+  const currSymbol2 = document.getElementById('currSymbol2');
+
+  const prospectVal  = document.getElementById('prospectVal');
+  const leadVal      = document.getElementById('leadVal');
+  const customerVal  = document.getElementById('customerVal');
+  const prospectPct  = document.getElementById('prospectPct');
+  const leadPct      = document.getElementById('leadPct');
+  const customerPct  = document.getElementById('customerPct');
+  const prospectBar  = document.getElementById('prospectBar');
+  const leadBar      = document.getElementById('leadBar');
+  const customerBar  = document.getElementById('customerBar');
+
+  const canvas  = document.getElementById('chart');
+  const ctx     = canvas.getContext('2d');
+  const tooltip = document.getElementById('tooltip');
+
+  // ── State ──
+  let chartData = [];
+
+  // ── Formulas ──
+  function calcMonths(start, end) {
+    if (!start || !end) return 6;
+    const s = new Date(start), e = new Date(end);
+    const diff = (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth());
+    return Math.max(1, diff);
+  }
+
+  function calculate() {
+    const rev  = parseFloat(revenue.value)    || 0;
+    const aov  = parseFloat(avgOrder.value)   || 1;
+    const lr   = parseFloat(leadRate.value)   || 1;
+    const pr   = parseFloat(prospectRate.value) || 1;
+    const months = calcMonths(startDate.value, endDate.value);
+
+    // Totals
+    const customers  = rev / aov;
+    const leads      = customers * 100 / lr;
+    const prospects  = leads * 100 / pr;
+
+    // Update stat cards
+    customerVal.textContent  = Math.round(customers);
+    leadVal.textContent      = Math.round(leads);
+    prospectVal.textContent  = Math.round(prospects);
+
+    // Percentages relative to prospects (max)
+    const maxVal = Math.max(prospects, 1);
+    const cPct = (customers  / maxVal * 100).toFixed(0);
+    const lPct = (leads      / maxVal * 100).toFixed(0);
+
+    customerPct.textContent  = cPct  + '%';
+    leadPct.textContent      = lPct  + '%';
+    prospectPct.textContent  = '100%';
+
+    customerBar.style.width  = cPct  + '%';
+    leadBar.style.width      = lPct  + '%';
+    prospectBar.style.width  = '100%';
+
+    // Build per-month chart data (distributed evenly)
+    chartData = [];
+    for (let i = 1; i <= months; i++) {
+      const factor = i / months;
+      chartData.push({
+        month: i,
+        prospects: Math.round(prospects * factor),
+        leads:     Math.round(leads     * factor),
+        customers: Math.round(customers * factor),
+      });
+    }
+
+    drawChart();
+  }
+
+  // ── Chart renderer (pure canvas) ──
+  function drawChart() {
+    const W = canvas.offsetWidth;
+    const H = canvas.offsetHeight;
+    canvas.width  = W * devicePixelRatio;
+    canvas.height = H * devicePixelRatio;
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+
+    const pad = { top: 20, right: 20, bottom: 40, left: 36 };
+    const chartW = W - pad.left - pad.right;
+    const chartH = H - pad.top  - pad.bottom;
+
+    ctx.clearRect(0, 0, W, H);
+
+    if (!chartData.length) return;
+
+    const maxProspect = Math.max(...chartData.map(d => d.prospects), 1);
+
+    const rowH   = chartH / chartData.length;
+    const barH   = rowH * 0.22;
+    const gap    = rowH * 0.08;
+
+    // Grid lines
+    const steps = 5;
+    ctx.strokeStyle = 'rgba(45,58,80,0.8)';
+    ctx.lineWidth   = 1;
+    for (let i = 0; i <= steps; i++) {
+      const x = pad.left + (chartW / steps) * i;
+      ctx.beginPath();
+      ctx.moveTo(x, pad.top);
+      ctx.lineTo(x, pad.top + chartH);
+      ctx.stroke();
+
+      // Label
+      const label = Math.round((maxProspect / steps) * i);
+      ctx.fillStyle = 'rgba(122,138,170,0.8)';
+      ctx.font = `${10 * (W / 500)}px DM Sans`;
+      ctx.textAlign = 'center';
+      ctx.fillText(label + ' people', x, pad.top + chartH + 16);
+    }
+
+    // Axis label (rotated "Months")
+    ctx.save();
+    ctx.fillStyle = 'rgba(122,138,170,0.8)';
+    ctx.font = `${10 * (W / 500)}px DM Sans`;
+    ctx.translate(10, pad.top + chartH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillText('Months', 0, 0);
+    ctx.restore();
+
+    // Bars
+    chartData.forEach((d, i) => {
+      const y = pad.top + i * rowH;
+
+      // Month label
+      ctx.fillStyle = 'rgba(122,138,170,0.9)';
+      ctx.font = `${11 * (W / 500)}px DM Sans`;
+      ctx.textAlign = 'right';
+      ctx.fillText(d.month, pad.left - 6, y + rowH / 2 + 4);
+
+      const barY = y + (rowH - 3 * barH - 2 * gap) / 2;
+
+      const drawBar = (value, barTop, color) => {
+        const w = (value / maxProspect) * chartW;
+        const r = 3;
+        const x = pad.left;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(x + r, barTop);
+        ctx.lineTo(x + w - r, barTop);
+        ctx.quadraticCurveTo(x + w, barTop, x + w, barTop + r);
+        ctx.lineTo(x + w, barTop + barH - r);
+        ctx.quadraticCurveTo(x + w, barTop + barH, x + w - r, barTop + barH);
+        ctx.lineTo(x + r, barTop + barH);
+        ctx.quadraticCurveTo(x, barTop + barH, x, barTop + barH - r);
+        ctx.lineTo(x, barTop + r);
+        ctx.quadraticCurveTo(x, barTop, x + r, barTop);
+        ctx.closePath();
+        ctx.fill();
+      };
+
+      drawBar(d.prospects, barY,                        'rgba(90,140,220,0.85)');
+      drawBar(d.leads,     barY + barH + gap,            'rgba(60,100,170,0.75)');
+      drawBar(d.customers, barY + 2 * (barH + gap),     'rgba(35,65,110,0.70)');
+    });
+  }
+
+  // ── Tooltip on hover ──
+  canvas.addEventListener('mousemove', (e) => {
+    if (!chartData.length) return;
+    const rect = canvas.getBoundingClientRect();
+    const mouseY = e.clientY - rect.top;
+    const H = canvas.offsetHeight;
+    const pad = { top: 20, bottom: 40 };
+    const chartH = H - pad.top - pad.bottom;
+    const rowH = chartH / chartData.length;
+    const i = Math.floor((mouseY - pad.top) / rowH);
+    if (i >= 0 && i < chartData.length) {
+      const d = chartData[i];
+      tooltip.style.display = 'block';
+      tooltip.style.left = (e.clientX - rect.left + 12) + 'px';
+      tooltip.style.top  = (e.clientY - rect.top  - 30) + 'px';
+      tooltip.innerHTML = `<strong>Month #${d.month}</strong><br>
+        Prospects: ${d.prospects}<br>
+        Leads: ${d.leads}<br>
+        Customers: ${d.customers}`;
+    } else {
+      tooltip.style.display = 'none';
+    }
+  });
+  canvas.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+
+  // ── Slider labels ──
+  leadRate.addEventListener('input', () => {
+    leadRateVal.textContent = parseFloat(leadRate.value).toFixed(2) + '%';
+    calculate();
+  });
+  prospectRate.addEventListener('input', () => {
+    prospectRateVal.textContent = parseFloat(prospectRate.value).toFixed(2) + '%';
+    calculate();
+  });
+
+  // ── Currency symbol ──
+  currency.addEventListener('change', () => {
+    const sym = currency.value;
+    currSymbol.textContent  = sym;
+    currSymbol2.textContent = sym;
+  });
+
+  // ── All other inputs ──
+  [revenue, avgOrder, startDate, endDate].forEach(el => {
+    el.addEventListener('input', calculate);
+  });
+
+  // ── Resize ──
+  window.addEventListener('resize', drawChart);
+
+  // ── Init ──
+  calculate();
+</script>
+</body>
+</html>
