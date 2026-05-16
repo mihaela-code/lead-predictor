@@ -257,7 +257,8 @@
       box-shadow: 0 8px 24px rgba(0,0,0,.4);
     }
 
-    <!-- Responsive layout for mobile screens -->@media (max-width: 700px) {
+    /* Responsive layout for mobile screens */
+@media (max-width: 700px) {
       .main { grid-template-columns: 1fr; }
       .panel-left, .panel-right { border: none; border-bottom: 1px solid var(--border); }
       .panel-right { flex-direction: row; flex-wrap: wrap; }
@@ -554,7 +555,7 @@
   }
 
   // ── Tooltip on hover ──
-  canvas.addEventListener('mousemove', (e) => {
+  <!-- Tooltip shown on chart hover for monthly data -->canvas.addEventListener('mousemove', (e) => {
     if (!chartData.length) return;
     const rect = canvas.getBoundingClientRect();
     const mouseY = e.clientY - rect.top;
