@@ -557,7 +557,7 @@
   }
 
   // ── Tooltip on hover ──
-  <!-- Tooltip shown on chart hover for monthly data -->canvas.addEventListener('mousemove', (e) => {
+  canvas.addEventListener('mousemove', (e) => {
     if (!chartData.length) return;
     const rect = canvas.getBoundingClientRect();
     const mouseY = e.clientY - rect.top;
